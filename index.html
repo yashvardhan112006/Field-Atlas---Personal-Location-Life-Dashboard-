@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Field Atlas — A Location Timeline</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F1EAD9;
+    --paper-deep:#E7DCC4;
+    --ink:#2B2118;
+    --ink-soft:#5C4F3F;
+    --rust:#A8431F;
+    --rust-deep:#7E3015;
+    --survey:#1F5C4F;
+    --navy:#3D5A73;
+    --brass:#C9A227;
+    --line:rgba(43,33,24,0.16);
+    --line-strong:rgba(43,33,24,0.32);
+    --shadow:0 2px 0 rgba(43,33,24,0.08);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    background-image:
+      radial-gradient(circle at 12% 8%, rgba(168,67,31,0.05), transparent 40%),
+      radial-gradient(circle at 88% 92%, rgba(31,92,79,0.06), transparent 40%);
+  }
+  h1,h2,h3{font-family:'Fraunces',serif;font-weight:600;margin:0;color:var(--ink);}
+  .mono{font-family:'Space Mono',monospace;}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 28px;}
+
+  /* ---------- HERO ---------- */
+  .hero{
+    position:relative;
+    padding:72px 0 56px;
+    border-bottom:1px solid var(--line-strong);
+    overflow:hidden;
+  }
+  .hero::before{
+    content:"";
+    position:absolute; inset:0;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size:42px 42px;
+    opacity:0.5;
+    mask-image: radial-gradient(ellipse 90% 70% at 50% 30%, black 30%, transparent 80%);
+    pointer-events:none;
+  }
+  .eyebrow{
+    font-family:'Space Mono',monospace;
+    font-size:12px; letter-spacing:0.14em; text-transform:uppercase;
+    color:var(--rust); margin-bottom:18px; display:flex; align-items:center; gap:10px;
+  }
+  .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--rust);display:inline-block;}
+  .hero h1{
+    font-size:clamp(40px,6vw,72px);
+    line-height:0.98;
+    letter-spacing:-0.01em;
+    max-width:880px;
+    position:relative;
+    z-index:1;
+  }
+  .hero h1 em{font-style:italic;color:var(--rust);}
+  .hero-sub{
+    margin-top:20px; max-width:560px; font-size:17px; line-height:1.55; color:var(--ink-soft);
+    position:relative; z-index:1;
+  }
+  .hero-stat-row{
+    margin-top:44px;
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:0;
+    border-top:1px solid var(--line-strong);
+    position:relative; z-index:1;
+  }
+  .hero-stat{
+    padding:20px 22px 4px 0;
+    border-right:1px solid var(--line);
+  }
+  .hero-stat:last-child{border-right:none;}
+  .hero-stat .num{
+    font-family:'Fraunces',serif; font-weight:600; font-size:clamp(26px,3vw,38px);
+    color:var(--ink); display:block; line-height:1.1;
+  }
+  .hero-stat .num .unit{font-size:0.45em; font-family:'Space Mono',monospace; color:var(--ink-soft); margin-left:4px;}
+  .hero-stat .lbl{
+    font-family:'Space Mono',monospace; font-size:11px; letter-spacing:0.06em; text-transform:uppercase;
+    color:var(--ink-soft); margin-top:6px; display:block;
+  }
+
+  /* compass rose decoration */
+  .compass{
+    position:absolute; top:48px; right:28px; width:120px; height:120px; opacity:0.5;
+  }
+  @media (max-width:780px){ .compass{display:none;} }
+
+  /* ---------- SECTION SCAFFOLDING ---------- */
+  section{padding:56px 0;}
+  .section-head{
+    display:flex; justify-content:space-between; align-items:baseline; gap:24px;
+    margin-bottom:28px; flex-wrap:wrap;
+  }
+  .section-head .num-tag{
+    font-family:'Space Mono',monospace; font-size:12px; color:var(--rust); letter-spacing:0.08em;
+  }
+  .section-head h2{font-size:clamp(24px,3vw,32px);}
+  .section-desc{max-width:560px;color:var(--ink-soft);font-size:15px;line-height:1.55;}
+
+  /* ---------- MAP ---------- */
+  .map-section{border-top:1px solid var(--line-strong);}
+  .map-shell{
+    border:1px solid var(--line-strong);
+    background:var(--paper-deep);
+    box-shadow:var(--shadow);
+    position:relative;
+  }
+  #map{ height:560px; width:100%; filter:saturate(0.85); }
+  @media (max-width:780px){ #map{height:420px;} }
+
+  .map-controls{
+    display:flex; flex-wrap:wrap; gap:10px; align-items:center;
+    padding:16px 18px; border-bottom:1px solid var(--line-strong);
+    background:var(--paper);
+  }
+  .map-controls label{font-family:'Space Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-soft);margin-right:4px;}
+  select, .btn-toggle{
+    font-family:'Inter',sans-serif;
+    border:1px solid var(--line-strong);
+    background:var(--paper);
+    color:var(--ink);
+    padding:7px 10px;
+    font-size:13px;
+    border-radius:3px;
+    cursor:pointer;
+  }
+  select:hover, .btn-toggle:hover{border-color:var(--rust);}
+  .chip-group{display:flex;gap:6px;flex-wrap:wrap;}
+  .chip{
+    font-family:'Space Mono',monospace;
+    font-size:11px;
+    padding:6px 10px;
+    border:1px solid var(--line-strong);
+    border-radius:20px;
+    cursor:pointer;
+    background:var(--paper);
+    color:var(--ink-soft);
+    user-select:none;
+    transition:all .15s ease;
+  }
+  .chip.active{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+  .chip .swatch{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;}
+
+  .map-foot{
+    display:flex; justify-content:space-between; padding:12px 18px; border-top:1px solid var(--line-strong);
+    background:var(--paper); font-family:'Space Mono',monospace; font-size:11px; color:var(--ink-soft);
+    flex-wrap:wrap; gap:8px;
+  }
+
+  .legend-line{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .legend-item{display:flex;align-items:center;gap:6px;}
+  .legend-swatch{width:14px;height:3px;display:inline-block;}
+
+  /* ---------- TIMELINE CHART ---------- */
+  .chart-section{border-top:1px solid var(--line-strong);}
+  .chart-shell{
+    border:1px solid var(--line-strong);
+    background:var(--paper-deep);
+    box-shadow:var(--shadow);
+    padding:24px 18px 12px;
+  }
+  #monthChart{width:100%; height:260px; display:block;}
+  .chart-legend{display:flex;gap:18px;margin-top:8px;padding:0 4px;font-family:'Space Mono',monospace;font-size:11px;color:var(--ink-soft);flex-wrap:wrap;}
+
+  /* ---------- GRID: activity + places ---------- */
+  .grid-2{display:grid;grid-template-columns:1.1fr 1fr;gap:24px;}
+  @media (max-width:900px){.grid-2{grid-template-columns:1fr;}}
+
+  .card{
+    border:1px solid var(--line-strong);
+    background:var(--paper-deep);
+    box-shadow:var(--shadow);
+    padding:24px;
+  }
+  .card h3{font-size:18px;margin-bottom:4px;}
+  .card .card-sub{font-size:13px;color:var(--ink-soft);margin-bottom:20px;}
+
+  .mode-row{
+    display:grid; grid-template-columns: 130px 1fr 70px 90px; align-items:center; gap:12px;
+    padding:10px 0; border-bottom:1px solid var(--line);
+    font-size:13px;
+  }
+  .mode-row:last-child{border-bottom:none;}
+  .mode-name{font-family:'Space Mono',monospace;font-size:12px;display:flex;align-items:center;gap:8px;}
+  .mode-dot{width:9px;height:9px;border-radius:50%;flex:none;}
+  .mode-bar-bg{height:8px;background:var(--line);border-radius:4px;overflow:hidden;}
+  .mode-bar-fill{height:100%;border-radius:4px;}
+  .mode-km{text-align:right;font-family:'Space Mono',monospace;color:var(--ink-soft);font-size:12px;}
+  .mode-count{text-align:right;font-family:'Space Mono',monospace;color:var(--ink-soft);font-size:12px;}
+
+  .place-row{
+    display:grid; grid-template-columns: 28px 1fr auto; align-items:center; gap:12px;
+    padding:11px 0; border-bottom:1px solid var(--line);
+    cursor:pointer;
+  }
+  .place-row:last-child{border-bottom:none;}
+  .place-row:hover .place-name{color:var(--rust);}
+  .place-rank{font-family:'Fraunces',serif;font-weight:600;color:var(--brass);font-size:18px;}
+  .place-name{font-size:13px;font-weight:500;}
+  .place-meta{font-family:'Space Mono',monospace;font-size:11px;color:var(--ink-soft);}
+  .place-stat{text-align:right;font-family:'Space Mono',monospace;font-size:12px;color:var(--ink-soft);white-space:nowrap;}
+
+  /* ---------- FOOTER ---------- */
+  footer{
+    border-top:1px solid var(--line-strong);
+    padding:32px 0 48px;
+    font-family:'Space Mono',monospace;
+    font-size:11px;
+    color:var(--ink-soft);
+    display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;
+  }
+
+  ::selection{background:var(--brass);color:var(--ink);}
+
+  .leaflet-popup-content-wrapper{
+    background:var(--paper); color:var(--ink); border-radius:2px;
+    font-family:'Inter',sans-serif; box-shadow:0 4px 12px rgba(43,33,24,0.25);
+  }
+  .leaflet-popup-content{margin:10px 12px;font-size:12.5px;line-height:1.5;}
+  .leaflet-popup-tip{background:var(--paper);}
+  .popup-title{font-family:'Space Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.04em;color:var(--rust);margin-bottom:3px;}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important; transition:none !important;}
+  }
+
+  @media (max-width:780px){
+    .hero-stat-row{grid-template-columns:repeat(2,1fr);}
+    .hero-stat:nth-child(2){border-right:none;}
+    .hero-stat{padding-top:14px;border-top:1px solid var(--line);}
+    .hero-stat:nth-child(1),.hero-stat:nth-child(2){border-top:none;}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <section class="hero">
+    <svg class="compass" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="46" fill="none" stroke="#2B2118" stroke-width="0.75" opacity="0.4"/>
+      <circle cx="50" cy="50" r="2" fill="#A8431F"/>
+      <line x1="50" y1="6" x2="50" y2="94" stroke="#2B2118" stroke-width="0.5" opacity="0.3"/>
+      <line x1="6" y1="50" x2="94" y2="50" stroke="#2B2118" stroke-width="0.5" opacity="0.3"/>
+      <polygon points="50,10 54,50 50,46 46,50" fill="#A8431F"/>
+      <text x="50" y="20" text-anchor="middle" font-family="Space Mono" font-size="9" fill="#2B2118">N</text>
+    </svg>
+    <div class="eyebrow"><span class="dot"></span>PERSONAL FIELD ATLAS · LOCATION TIMELINE</div>
+    <h1>Five years, <em>mapped</em>.<br>Every place you stood still,<br>every road you crossed.</h1>
+    <p class="hero-sub">Reconstructed from your Google Timeline export — visits, drives, rides and walks plotted on one continuous map, from <span class="mono" id="heroDateStart">—</span> to <span class="mono" id="heroDateEnd">—</span>.</p>
+    <div class="hero-stat-row" id="heroStats"></div>
+  </section>
+
+  <section class="map-section">
+    <div class="section-head">
+      <div>
+        <div class="num-tag">01 — THE MAP</div>
+        <h2>Where you've been</h2>
+      </div>
+      <p class="section-desc">Routes in colour by mode of travel; circles mark places you stayed, sized by how long you stayed there. Filter by year or travel mode below.</p>
+    </div>
+    <div class="map-shell">
+      <div class="map-controls">
+        <div>
+          <label for="yearSelect">Year</label>
+          <select id="yearSelect"></select>
+        </div>
+        <div class="chip-group" id="modeChips"></div>
+        <div style="margin-left:auto;">
+          <span class="btn-toggle" id="resetView">Reset view</span>
+        </div>
+      </div>
+      <div id="map"></div>
+      <div class="map-foot">
+        <div class="legend-line" id="mapLegend"></div>
+        <div id="mapCount">—</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="chart-section">
+    <div class="section-head">
+      <div>
+        <div class="num-tag">02 — THE RHYTHM</div>
+        <h2>Distance covered, month by month</h2>
+      </div>
+      <p class="section-desc">Total kilometres travelled each month across the whole record. Taller bars mean more movement — trips, commutes, and everything in between.</p>
+    </div>
+    <div class="chart-shell">
+      <svg id="monthChart"></svg>
+      <div class="chart-legend">
+        <span><span class="mono">hover</span> a bar for the exact month and distance</span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <div>
+        <div class="num-tag">03 — THE BREAKDOWN</div>
+        <h2>How you move, where you stay</h2>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h3>Travel modes</h3>
+        <div class="card-sub">By total distance covered, across all years</div>
+        <div id="modeList"></div>
+      </div>
+      <div class="card">
+        <h3>Most visited places</h3>
+        <div class="card-sub">Ranked by cumulative time spent — click to find on the map</div>
+        <div id="placeList"></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>Field Atlas — generated locally from your Timeline.json. Nothing here was uploaded anywhere.</span>
+    <span id="generatedStamp"></span>
+  </footer>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
