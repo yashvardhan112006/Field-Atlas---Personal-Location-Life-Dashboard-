@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Recall — Day Reconstruction</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Manrope:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/vendor/leaflet.css?v=1.9.4">
+  <link rel="stylesheet" href="/style.css?v=11">
+</head>
+<body>
+  <div id="toast"></div>
+  <section id="landing" class="landing">
+    <div class="orb o1"></div><div class="orb o2"></div>
+    <main class="picker">
+      <div class="brand"><span class="brandmark">R</span> RECALL</div>
+      <p class="eyebrow">YOUR LIFE, RECONSTRUCTED</p>
+      <h1>What happened<br><em>that day?</em></h1>
+      <p class="intro">Choose a moment. We’ll thread together where you went, what you heard, what you explored, and how you moved.</p>
+      <div class="mode"><button class="active" data-mode="single">Single day</button><button data-mode="range">Date range</button></div>
+      <div class="dates"><label><span id="fromLabel">DATE</span><input id="from" type="date"></label><label id="toWrap" hidden><span>TO</span><input id="to" type="date"></label></div>
+      <button id="continue" class="continue">Reconstruct my day <span>→</span></button>
+      <div id="sources" class="source-pills"></div>
+    </main>
+  </section>
+  <section id="dashboard" hidden>
+    <header>
+      <button class="logo" id="home"><span class="brandmark">R</span> Recall</button>
+      <div class="date-nav">
+        <button id="prev">‹</button>
+        <button id="dateTitle"></button>
+        <button id="next">›</button>
+      </div>
+      <div class="header-actions">
+        <button id="theme">◐</button>
+      </div>
+    </header>
+    <div class="dashboard-layout">
+      <nav class="sidebar" id="sidebar">
+        <a href="#/overview" class="nav-item active" data-view="overview"><span class="nav-icon">📊</span> Overview</a>
+        <a href="#/map" class="nav-item" data-view="map"><span class="nav-icon">📍</span> Geography</a>
+        <a href="#/spotify" class="nav-item" data-view="spotify"><span class="nav-icon">🎵</span> Music</a>
+        <a href="#/chrome" class="nav-item" data-view="chrome"><span class="nav-icon">🌐</span> Web</a>
+        <a href="#/health" class="nav-item" data-view="health"><span class="nav-icon">💪</span> Health</a>
+        <a href="#/chess" class="nav-item" data-view="chess"><span class="nav-icon">♟️</span> Chess</a>
+        <a href="#/meet" class="nav-item" id="nav-meet" data-view="meet"><span class="nav-icon">📞</span> Meet</a>
+        <a href="#/analytics" class="nav-item" data-view="analytics"><span class="nav-icon">📈</span> Analytics</a>
+      </nav>
+      <main id="content">
+        <div id="view-overview" class="page-view active"></div>
+        <div id="view-map" class="page-view"></div>
+        <div id="view-spotify" class="page-view"></div>
+        <div id="view-chrome" class="page-view"></div>
+        <div id="view-health" class="page-view"></div>
+        <div id="view-chess" class="page-view"></div>
+        <div id="view-meet" class="page-view"></div>
+        <div id="view-analytics" class="page-view"></div>
+      </main>
+    </div>
+  </section>
+
+  <script src="/vendor/leaflet.js?v=1.9.4"></script>
+  <script src="/app.js?v=11"></script>
+</body>
+</html>
